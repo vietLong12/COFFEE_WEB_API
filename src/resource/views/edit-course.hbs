@@ -1,0 +1,33 @@
+<div class="mt-4">
+    <h3>Chỉnh sửa khóa học</h3>
+    <form action="/me/courses/myCourses/update" method="post">
+        <div class="mb-3">
+            <label for="name" class="form-label">Tên khóa học:</label>
+            <input type="text" name="name" id="name" class="form-control" placeholder="Tên khóa học..."
+                value="{{course.name}}">
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Mô tả về khóa học:</label>
+            <textarea name="description" id="description" class="form-control" rows="3"
+                aria-describedby="descriptionHelpId"
+                placeholder="Mô tả chi tiết về khóa học...">{{course.description}}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="videoId" class="form-label">Video ID:</label>
+            <input type="text" name="videoId" id="videoId" class="form-control"
+                placeholder="ID của Video trên youtube..." aria-describedby="videoIdHelpId" value="{{course.videoId}}">
+        </div>
+        <div class="mb-3">
+            <label for="level" class="form-label">Mức độ:</label>
+            <select name="level" id="level" class="form-select" aria-describedby="levelHelpId" value="{{course.level}}">
+                <option value="{{course.level}}" disabled selected hidden>{{course.level}}</option>
+                <option value="beginner">Mới bắt đầu</option>
+                <option value="intermediate">Trung bình</option>
+                <option value="advanced">Nâng cao</option>
+            </select>
+
+        </div>
+        <input type="hidden" name="_id" value="{{course._id}}">
+        <button type="submit" class="btn btn-primary">Cập nhật</button>
+    </form>
+</div>

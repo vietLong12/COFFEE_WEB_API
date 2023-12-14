@@ -1,0 +1,30 @@
+<div class="mt-4">
+    <h3>Thêm khóa học</h3>
+    <form action="/courses/create" method="post">
+        <div class="mb-3">
+            <label for="name" class="form-label">Tên khóa học:</label>
+            <input type="text" name="name" id="name" class="form-control" placeholder="Tên khóa học..."
+                aria-describedby="nameHelpId">
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Mô tả về khóa học:</label>
+            <textarea name="description" id="description" class="form-control" rows="3"
+                aria-describedby="descriptionHelpId" placeholder="Mô tả chi tiết về khóa học...">Đây là mô tả chi tiết về khóa học</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="videoId" class="form-label">Video ID:</label>
+            <input type="text" name="videoId" id="videoId" class="form-control"
+                placeholder="ID của Video trên youtube..." aria-describedby="videoIdHelpId">
+        </div>
+        <div class="mb-3">
+            <label for="level" class="form-label">Mức độ:</label>
+            <select name="level" id="level" class="form-select" aria-describedby="levelHelpId">
+                <option value="" disabled selected hidden>--- Chọn một mức độ ---</option>
+                <option value="beginner">Mới bắt đầu</option>
+                <option value="intermediate">Trung bình</option>
+                <option value="advanced">Nâng cao</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Thêm mới</button>
+    </form>
+</div>

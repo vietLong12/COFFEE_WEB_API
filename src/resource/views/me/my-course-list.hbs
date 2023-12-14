@@ -1,0 +1,68 @@
+<h1>{{title}}</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Level</th>
+            <th scope="col">CreateAt</th>
+            <th scope="col">updatedAt</th>
+            <th scope="col"></th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            {{#each courses}}
+            <th scope="row">{{sum @index 1}}</th>
+            <td>{{this.name}}</td>
+            <td>{{capitalizeFirstLetter this.level}}</td>
+            <td>{{this.createdAt}}</td>
+            <td>{{this.updatedAt}}</td>
+            <td>
+                <a class="btn btn-primary" href="/courses/{{this._id}}/edit" role="button">Sửa</a>
+            </td>
+            <td>
+                <form action="/me/courses/myCourses/delete" method="post">
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-id="{{this._id}}"
+                        data-bs-target="#delete-course">
+                        Xoá
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {{/each}}
+    </tbody>
+</table>
+
+
+<!-- Modal -->
+<div class="modal fade" id="delete-course" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5 text-danger" id="exampleModalLabel">F8 Education Warning</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Bạn chuẩn bị xóa 1 khóa học?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger">Xóa</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const exampleModal = document.getElementById('delete-course')
+    if (exampleModal) {
+        exampleModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget
+            const id = button.getAttribute('data-id')
+            console.log(id)
+        })
+    }
+</script>

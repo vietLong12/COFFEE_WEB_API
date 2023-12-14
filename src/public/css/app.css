@@ -1,0 +1,33 @@
+.test {
+  font-size: 1rem;
+  background-color: white;
+}
+
+header {
+  background-color: red;
+}
+
+footer {
+  background-color: yellow;
+}
+.cart-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cart-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.text-right {
+  text-align: right;
+}
+
+.user-avatar {
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+}
