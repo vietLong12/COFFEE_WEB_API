@@ -73,8 +73,11 @@ class ProductController {
 
   // [PUT] /products
   editProduct = (req, res) => {
-    const productReq = req.body;
-    console.log('productReq: ', req.body);
+    let productReq = req.body;
+    console.log('productReq: ', productReq.price);
+    if (productReq.price && productReq.price.toString().indexOf(" " > 0)) {
+      productReq.price = productReq.price.toString().replace(/\s+/g, '')
+    }
     if (isValidObjectId(productReq.id)) {
       Product.findById(productReq.id)
         .then((product) => {
@@ -175,7 +178,11 @@ class ProductController {
 
   createSize = (req, res) => {
     const sizeReq = req.body.size;
+    console.log('sizeReq: ', typeof (sizeReq));
     const categoryIdReq = req.body.categoryId
+    if (!categoryIdReq) {
+      return res.status(400).json({ message: "Request invalid", createdAt: new Date() })
+    }
     if (typeof (sizeReq) != 'string') {
       return res.status(400).json({ message: "Size request invalid", createdAt: new Date() })
     }

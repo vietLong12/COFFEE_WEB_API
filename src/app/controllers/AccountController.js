@@ -9,7 +9,7 @@ class AccountController {
     Account.find().then((data) => {
       let list = [];
       const result = data.map((user) => {
-        list.push({ ...user._doc, password: null });
+        list.push({ ...user._doc });
       });
       res.json({
         list: list,
@@ -81,20 +81,19 @@ class AccountController {
   // [PUT] /accounts
   editAccount = (req, res, next) => {
     const accountReq = req.body;
+    console.log('accountReq: ', accountReq.password);
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       return res.status(400).json(errors.array());
     }
-
-    if (accountReq.password) {
-      if (accountReq.password.length < 6 || accountReq.password.length > 20) {
-        return res.status(400).json({
-          message: "Invalid password",
-          createdAt: new Date(),
-        });
-      }
-    } else {
+    if (accountReq.password && (accountReq.password.length < 6 || accountReq.password.length > 20)) {
+      return res.status(400).json({
+        message: "Invalid password",
+        createdAt: new Date(),
+      });
+    }
+    else {
       Account.findById(accountReq.id)
         .then((account) => {
           if (!account) {
