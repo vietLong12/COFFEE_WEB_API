@@ -1,3 +1,4 @@
+const { isValidObjectId } = require("mongoose");
 const { generateRandomToken } = require("../../util/util");
 const account = require("../models/account");
 const Account = require("../models/account");
@@ -5,149 +6,139 @@ const { validationResult } = require("express-validator");
 
 class AccountController {
   // [GET] /accounts
-  listAccount(req, res, next) {
-    Account.find().then((data) => {
-      let list = [];
-      const result = data.map((user) => {
-        list.push({ ...user._doc });
-      });
-      res.json({
-        list: list,
-        recordSize: list.length,
-      });
-    });
+  listAccount = async (req, res, next) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5
+    const keyword = req.query.keyword || ""
+    const startIndex = (page - 1) * limit;
+    const filter = {
+      $or: [
+        { username: { $regex: keyword, $options: 'i' } },
+        { email: { $regex: keyword, $options: 'i' } },
+        { phone: { $regex: keyword, $options: 'i' } },
+      ],
+    };
+    const data = await Account.find(filter).skip(startIndex).limit(limit)
+    const pageCount = await Account.countDocuments(filter);
+    res.json({
+      status: 'success',
+      code: 200,
+      accounts: data,
+      timeStamp: new Date(),
+      pagination: {
+        currentPage: data.length == 0 ? 1 : page,
+        totalDocuments: pageCount,
+        totalPages: Math.ceil(pageCount / limit)
+      }
+    })
   }
 
   //[GET] /acounts/:id
-  getAccount = (req, res) => {
+  getAccount = async (req, res) => {
+    const startTime = new Date().getTime();
     const account_id = req.params.id;
-    Account.findById(account_id)
-      .then((account) => {
-        res.json({ ...account._doc, password: null });
-      })
-      .catch((error) => {
-        if (!account._doc) {
-          res.status(400);
-          res.json({
-            message: "Id not found",
-            createdAt: new Date(),
-          });
-        } else {
-          res.status(400);
-          res.json({
-            message: error.message,
-            createdAt: new Date(),
-          });
+    try {
+      if (!isValidObjectId(account_id)) {
+        throw {
+          message: "ID is not valid", code: 400
         }
+      }
+      const account = await Account.findById(account_id)
+      if (!account) {
+        throw {
+          message: "Account not found",
+          code: 404
+        }
+      }
+      const endTime = new Date().getTime() - startTime;
+      return res.json({
+        status: "success",
+        code: 200,
+        data: {
+          user_id: account._id,
+          username: account.username,
+          avatar: account.avatar,
+          email: account.email,
+          phone: account.phone,
+          created_at: account.createdAt,
+          updated_at: account.updatedAt,
+          address: account.address,
+          cart: account.cart
+        },
+        timeStamp: new Date().toLocaleString(),
+        processingTime: endTime + "ms"
+
       });
+    } catch (error) {
+      return res.status(error.code).json({
+        status: "error",
+        code: error.code,
+        msg: error.message,
+        createdAt: new Date().toLocaleString(),
+      })
+    }
   };
 
   // [POST] /accounts
-  async createAccount(req, res) {
-    try {
-      const accountRequest = req.body;
-      if (
-        !accountRequest.username ||
-        !accountRequest.password ||
-        !accountRequest.email ||
-        !accountRequest.phone
-      ) {
-        throw new Error("Invalid account request");
-      }
-      const account = new Account(accountRequest);
-      account.token = generateRandomToken()
-      const accountDb = await Account.findOne({ username: account.username })
-      if (accountDb != null) {
-        throw new Error("Account is exist")
-      }
-      const accountSaved = await account.save()
-      return res.status(201).json({
-        username: accountSaved.username,
-        email: accountSaved.email,
-        phone: accountSaved.phone,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
+  async createAccount(req, res, next) {
+    const reqBody = req.body
 
-    } catch (error) {
-      res.status(400);
-      res.json({
-        message: error.message,
-        createdAt: new Date(),
-      });
+    //Xoá mọi token đẩy lên từ req
+    reqBody.token = ""
+
+    const account = new Account(reqBody);
+    if (reqBody.email) {
+      const accountExist = await Account.find({ email: reqBody.email })
+      if (accountExist.length > 0) {
+        return res.status(400).json({ status: 'error', code: 400, msg: "Email is exist", createdAt: new Date().toLocaleString() })
+      }
     }
+    const accountResult = await account.save()
+    return res.json({
+      status: 'success', code: 200, msg: "Created account successfully", account: {
+        username: accountResult.username,
+        email: accountResult.email,
+        phone: accountResult.phone
+      },
+      timeStamp: accountResult.createdAt.toLocaleString()
+    })
   }
 
   // [PUT] /accounts
-  editAccount = (req, res, next) => {
+  editAccount = async (req, res, next) => {
     const accountReq = req.body;
-    console.log('accountReq: ', accountReq.password);
-    const errors = validationResult(req);
+    accountReq.updatedAt = new Date()
+    const account = await Account.findById(accountReq.user_id)
+    Object.assign(account, accountReq)
+    const accountSaved = await account.save()
+    return res.json({
+      status: 'success', code: 200, msg: "Updated account successfully", account: {
+        username: accountSaved.username,
+        email: accountSaved.email,
+        phone: accountSaved.phone
+      },
+      timeStamp: accountSaved.createdAt.toLocaleString()
+    })
 
-    if (!errors.isEmpty()) {
-      return res.status(400).json(errors.array());
-    }
-    if (accountReq.password && (accountReq.password.length < 6 || accountReq.password.length > 20)) {
-      return res.status(400).json({
-        message: "Invalid password",
-        createdAt: new Date(),
-      });
-    }
-    else {
-      Account.findById(accountReq.id)
-        .then((account) => {
-          if (!account) {
-            return res.status(404).json({
-              message: "Account not found",
-              createdAt: new Date(),
-            });
-          } else {
-            account.email = accountReq.email || account.email;
-            account.password = accountReq.password || account.password;
-            account.avatar = accountReq.avatar || account.avatar;
-            account.phone = accountReq.phone || account.phone;
-            const result = account.save();
-            result.then((resultAccount) => {
-              return res.status(200).json({
-                ...resultAccount._doc,
-                updatedAt: new Date(),
-              });
-            });
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-          res.status(500).json({
-            message: "Internal server error",
-            createdAt: new Date(),
-          });
-        });
-    }
+
   };
 
   //[DELETE] /accounts/:id
-  deleteAccount = (req, res) => {
-    Account.findByIdAndDelete(req.params.id)
-      .then((result) => {
-        if (result) {
-          res.status(200);
-          res.json({
-            message: "Account deleted",
-            createdAt: new Date(),
-          });
-        } else {
-          res.status(400);
-          res.json({
-            message: "Account not found",
-            createdAt: new Date(),
-          });
-        }
-      })
-      .catch((err) => {
-        res.status(400);
-        res.json({ message: err.message, createdAt: new Date() });
-      });
-  };
+  deleteAccount = async (req, res) => {
+    const userId = req.params.id;
+    const accountDeleted = await Account.findByIdAndDelete(userId) || { _id: null, username: null, email: null };
+
+    return res.status(200).json({
+      status: 'success', code: 200, msg: "Account deleted successfully", account: {
+        userId: accountDeleted._id,
+        username: accountDeleted.username,
+        email: accountDeleted.email,
+      },
+      timeStamp: new Date().toLocaleString()
+    })
+
+
+  }
 }
 
 module.exports = new AccountController();

@@ -9,9 +9,25 @@ const account = new Schema(
     avatar: { type: "string", default: "https://bom.so/l6xbjc" },
     email: { type: "string", default: "" },
     phone: { type: "string", default: "" },
-    token: {
-      type: "string", default: generateRandomToken()
-    },
+    address: [
+      {
+        homeAddress: { type: "string", default: "" },
+        city: {
+          code: { type: "number", default: 0 },
+          name: { type: "string", default: "" }
+        },
+        district: {
+          code: { type: "number", default: 0 },
+          name: { type: "string", default: "" }
+        },
+        ward: {
+          code: { type: Schema.Types.Number, default: 0 },
+          name: { type: "string", default: "" }
+        },
+        defaultAddress: { type: Schema.Types.Boolean, default: false }
+      }
+    ],
+    token: { type: "string", default: "" },
     cart: {
       items: [
         {
@@ -21,30 +37,10 @@ const account = new Schema(
         },
       ],
     },
-    createdAt: { type: Schema.Types.Date, default: new Date() },
-    updatedAt: { type: Schema.Types.Date, default: new Date() },
+    createdAt: { type: Schema.Types.Date, default: new Date().toLocaleString() },
+    updatedAt: { type: Schema.Types.Date, default: new Date().toLocaleString() },
   },
-  {
-    timestamps: true,
-  }
 );
 
-account.methods.addToCart = (product) => {
-  console.log(this);
-  const cartItems = [...this.cart.items];
-  const productId = product.id;
-  let isExist = false;
-  for (let i = 0; i < cartItems.length; i++) {
-    if (productId === cartItems[i]._id) {
-      cartItems[i].quantity++;
-      isExist = true;
-    }
-  }
-  if (!isExist) {
-    cartItems.push(product);
-  }
-  this.cart.items = cartItems;
-  return this.save();
-};
 
 module.exports = mongoose.model("Account", account, "coffee_account");
