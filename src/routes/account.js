@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const accountController = require("../app/controllers/AccountController");
-const { validateCreateAccount, validateEditAccount, validateDeleteAccount } = require('../util/validator');
+const { validateCreateAccount, validateEditAccount, validateDeleteAccount } = require('../util/validator/validatorAccount');
 
 
 router.get("/", accountController.listAccount);

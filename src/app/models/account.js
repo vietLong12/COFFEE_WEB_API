@@ -37,10 +37,23 @@ const account = new Schema(
         },
       ],
     },
+    verifyCode: { type: Schema.Types.String, default: "" },
+    verifyCodeExpireAt: { type: Schema.Types.Date, default: Date.now },
     createdAt: { type: Schema.Types.Date, default: new Date().toLocaleString() },
     updatedAt: { type: Schema.Types.Date, default: new Date().toLocaleString() },
   },
 );
+account.pre('save', function (next) {
+  // Thực hiện chỉ khi verifyCode thay đổi
+  if (this.isModified('verifyCode')) {
+    this.verifyCodeExpireAt = new Date(Date.now() + 30 * 1000); // Thời gian sống 2 phút
+  }
 
+  // Nếu verifyCodeExpireAt đã hết hạn, đặt lại verifyCode về ""
+  if (this.verifyCodeExpireAt < new Date()) {
+    this.verifyCode = "";
+  }
 
+  next();
+});
 module.exports = mongoose.model("Account", account, "coffee_account");

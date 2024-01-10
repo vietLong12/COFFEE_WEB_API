@@ -1,134 +1,159 @@
 const Product = require("../models/product");
+const Order = require("../models/order");
 const CategoryProduct = require("../models/categoryProduct");
-const SizeProduct = require("../models/sizeProduct");
+const RateProduct = require("../models/rateProduct");
 const { isValidObjectId } = require("mongoose");
 
 class ProductController {
   // [GET] /products
   async listProduct(req, res, next) {
-    try {
-      const data = await Product.find();
-
-      const result = await Promise.all(
-        data.map(async (product) => {
-          const sizeProduct = await SizeProduct.find({ categoryId: product._doc.categoryId });
-          const sizeResult = []
-          sizeProduct.map((item) => {
-            sizeResult.push(item.size)
-          })
-          return { ...product._doc, size: sizeResult };
-        })
-      );
-
-      return res.status(200).json({ data: result, recordSize: data.length });
-    } catch (error) {
-      // Handle errors appropriately
-      console.error(error);
-      return res.status(500).json({ error: 'Internal Server Error' });
+    const page = parseInt(req.query.page) || 1;
+    const depth = parseInt(req.query.depth) || 1;
+    const limit = parseInt(req.query.limit) || 5
+    const keyword = req.query.keyword || ""
+    const startIndex = (page - 1) * limit;
+    const filter = {
+      $or: [
+        { productName: { $regex: keyword, $options: 'i' } },
+        { "sizes.name": { $regex: keyword, $options: 'i' } },
+        { categoryId: { $regex: keyword, $options: 'i' } },
+      ],
+    };
+    let data = await Product.find(filter).skip(startIndex).limit(limit)
+    if (depth === 1) {
+      data = data.map((product) => {
+        return {
+          _id: product._id,
+          productName: product.productName,
+          categoryId: product.categoryId
+        }
+      })
     }
-  }
-
-  //[GET] /products/:id
-  getProductById = (req, res) => {
-    const product_id = req.params.id;
-    if (isValidObjectId(product_id)) {
-      Product.findById(product_id)
-        .then(async (product) => {
-          const listSize = await SizeProduct.find({ categoryId: product.categoryId })
-          return res.status(200).json({ data: { ...product._doc, size: listSize.map((item) => item.size) }, createdAt: new Date() });
-
-        })
-        .catch((error) => {
-          res.status(400);
-          res.json({
-            message: error.message,
-            createdAt: new Date(),
-          });
-        });
-    } else {
-      return res.status(400).json({ message: "Request invalid", createdAt: new Date() });
+    if (depth === 2) {
+      data = data.map((product) => {
+        return {
+          _id: product._id,
+          productName: product.productName,
+          sizes: product.sizes,
+          img: product.img,
+          desc: product.desc,
+          categoryId: product.categoryId
+        }
+      })
     }
-  };
-
-  // [POST] /products
-  createProduct(req, res) {
-    const productReq = req.body;
-    if (
-      !productReq.productName ||
-      !productReq.price ||
-      !productReq.categoryId || req.body._id
-    ) {
-      return res.status(400).json({ message: "Request invalid", createdAt: new Date() });
-    }
-    const product = new Product(productReq);
-    product.save().then((data) => {
-      return res.status(200).json({
-        message: "Product saved successfully",
-        createdAt: new Date(),
-        data: data
-      });
+    const pageCount = await Product.countDocuments(filter);
+    res.json({
+      status: 'success',
+      code: 200,
+      products: data,
+      timeStamp: new Date().toLocaleString(),
+      pagination: {
+        currentPage: data.length == 0 ? 1 : page,
+        totalDocuments: pageCount,
+        totalPages: Math.ceil(pageCount / limit)
+      }
     })
   }
 
 
-  // [PUT] /products
-  editProduct = (req, res) => {
-    let productReq = req.body;
-    console.log('productReq: ', productReq.price);
-    if (productReq.price && productReq.price.toString().indexOf(" " > 0)) {
-      productReq.price = productReq.price.toString().replace(/\s+/g, '')
-    }
-    if (isValidObjectId(productReq.id)) {
-      Product.findById(productReq.id)
-        .then((product) => {
-          product.productName = productReq.productName ? productReq.productName : product.productName;
-          product.price = productReq.price ? productReq.price : product.price;
-          product.img = productReq.img ? productReq.img : product.img;
-          product.desc = productReq.desc ? productReq.desc : product.desc;
-          product.quantity = productReq.quantity
-            ? productReq.quantity
-            : product.quantity;
-          product.isStock = productReq.quantity > 0;
-          product.updatedAt = new Date()
-          product.save().then((data) => res.status(200).json({ message: "Updated product", createdAt: new Date(), data: data }));
-
-        })
-        .catch((error) => {
-          res.status(400);
-          res.json({
-            message: "Id not found",
-            createdAt: new Date(),
-          });
-        });
+  //[GET] /products/:id
+  getProductById = async (req, res) => {
+    const product_id = req.params.id;
+    if (isValidObjectId(product_id)) {
+      const product = await Product.findById(product_id)
+      if (product) {
+        return res.status(200).json({ status: "success", code: 200, product: product, timestamp: new Date().toLocaleString() });
+      } else {
+        return res.status(404).json({ status: "error", code: 404, product: "Product not found", timestamp: new Date().toLocaleString() });
+      }
     } else {
-      return res.status(400).json({ message: "Request invalid", createdAt: new Date() });
+      return res.status(400).json({ status: "error", code: 400, msg: "Product id not valid", timestamp: new Date().toLocaleString(), });
+    }
+  };
+
+  // [POST] /products
+  async createProduct(req, res) {
+    const productReq = req.body;
+    const categoryId = req.body.categoryId;
+    try {
+      const category = await CategoryProduct.findById(categoryId)
+      if (category) {
+        const product = new Product(productReq);
+        const productSaved = await product.save();
+        return res.status(200).json({
+          status: "Success",
+          code: 200,
+          product: {
+            productName: productSaved.productName,
+            img: productSaved.img,
+            description: productSaved.desc,
+            category: category.category,
+            sizes: productSaved.sizes
+          },
+          timeStamp: new Date().toLocaleString()
+        });
+      } else {
+        throw {
+          code: 400,
+          message: "Category id not found"
+        }
+      }
+    } catch (error) {
+      return res.status(error.code).json({
+        status: "error",
+        code: error.code,
+        msg: error.message,
+        timeStamp: new Date().toLocaleString(),
+      })
+    }
+  }
+
+
+  // [PUT] /products
+  editProduct = async (req, res) => {
+    const productReq = req.body;
+    productReq.updatedAt = new Date();
+    try {
+      const product = await Product.findById(productReq.productId);
+      const oldProduct = { ...product._doc }
+      if (product) {
+        const productUpdate = Object.assign(product, productReq);
+        const productSaved = await productUpdate.save();
+        return res.json({ status: 'success', code: 200, product: productSaved, oldProduct: oldProduct, timestamp: new Date().toLocaleString() });
+      } else {
+        throw {
+          code: 404,
+          message: 'Product not found'
+        }
+      }
+    } catch (error) {
+      return res.status(error.code).json({ status: "error", code: error.code, message: error.message, timestamp: new Date().toLocaleString() });
     }
   };
 
   //[DELETE] /products/:id
   deleteProduct = (req, res) => {
-    console.log(req.params.id);
-    if (isValidObjectId(req.params.id)) {
-      Product.findByIdAndDelete(req.params.id)
-        .then((result) => {
-          if (result != null) {
-            res.status(200);
-            res.json({
-              message: "Product deleted",
-              createdAt: new Date(),
-              dataRemoved: result
-            });
-          } else {
-            return res.status(404).json({ message: "Product not found", createdAt: new Date(), dataRemoved: null })
-          }
-        })
-        .catch((err) => {
-          res.status(404);
-          res.json({ message: err.message, createdAt: new Date() });
-        });
-    } else {
-      return res.status(400).json({ message: "Request invalid", createdAt: new Date(), dataRemoved: null });
-    }
+    const productId = req.params.productId;
+    Product.findByIdAndDelete(productId)
+      .then((result) => {
+        if (result != null) {
+          res.status(200);
+          res.json({
+            status: "success",
+            code: 200,
+            message: "Product deleted",
+            dataRemoved: result,
+            timestamp: new Date().toLocaleString(),
+          });
+        } else {
+          return res.status(404).json({ status: "error", code: 404, msg: "Product not found", timestamp: new Date().toLocaleString() })
+        }
+      })
+      .catch((err) => {
+        res.status(404);
+        res.json({ message: err.message, createdAt: new Date() });
+      });
+
 
   };
 
@@ -157,88 +182,6 @@ class ProductController {
   }
 
 
-
-  // getSizeList = (req, res) => {
-  //   SizeProduct.find().then((data) => {
-  //     console.log(data);
-  //     let list = [];
-  //     const result = data.map((item) => {
-  //       list.push({ ...item._doc });
-  //     });
-  //     res.json({
-  //       list: list,
-  //       recordSize: list.length,
-  //     });
-  //   });
-  // }
-  getSizeList = async (req, res) => {
-    const data = await SizeProduct.find()
-    return res.json({ list: data, recordSize: data.length })
-  }
-
-  createSize = (req, res) => {
-    const sizeReq = req.body.size;
-    console.log('sizeReq: ', typeof (sizeReq));
-    const categoryIdReq = req.body.categoryId
-    if (!categoryIdReq) {
-      return res.status(400).json({ message: "Request invalid", createdAt: new Date() })
-    }
-    if (typeof (sizeReq) != 'string') {
-      return res.status(400).json({ message: "Size request invalid", createdAt: new Date() })
-    }
-    SizeProduct.find({ categoryId: categoryIdReq }).then((listSize) => {
-      const filterListSize = listSize.filter(item => item.size === sizeReq)
-      if (filterListSize.length > 0) {
-        return res.status(400).json({ message: "Size is exits", createdAt: new Date() })
-      }
-      new SizeProduct({ categoryId: categoryIdReq, size: sizeReq }).save().then((data) => {
-        return res.status(200).json({ data: data, createdAt: new Date() })
-      })
-    });
-  }
-
-  getSizeByCategoryId = async (req, res, next) => {
-    const categoryId = req.params.categoryId
-    try {
-      const product = await SizeProduct.find({ categoryId: categoryId })
-      if (product != null) {
-        return res.status(200).json({ data: product, recordSize: product.length })
-      } else {
-        return res.status(400).json({
-          message: 'Size not found',
-          createdAt: new Date()
-        })
-      }
-    } catch (error) {
-      return res.status(400).json({
-        message: error.message,
-        createdAt: new Date()
-      })
-    }
-
-
-
-  }
-
-  delelteSizeByCategoryId = (req, res) => {
-    if (req.body.categoryId) {
-      const categoryId = req.body.categoryId;
-      SizeProduct.findOneAndDelete({ categoryId: categoryId }).then(data => {
-        if (data != null) {
-          return res.status(200).json({ message: "Size removed", createdAt: new Date(), dataRemoved: data })
-        }
-        else {
-          return res.status(200).json({ message: "Id category invalid", createdAt: new Date(), dataRemoved: data })
-        }
-      })
-    }
-    else {
-      return res.status(400).json({ message: "Request invalid", createdAt: new Date(), dataRemoved: null })
-
-    }
-
-  }
-
   deleteCategoryById = (req, res) => {
     const categoryId = req.body.categoryId
     if (isValidObjectId(categoryId)) {
@@ -251,6 +194,29 @@ class ProductController {
       return res.status(400).json({ message: "Request invalid", createdAt: new Date(), dataRemoved: null })
     }
   }
+
+  commentProduct = async (req, res) => {
+    // const rateProductReq = req.body
+    // try {
+    //   const order = Order.find({ em: })
+    //   const rateProduct = new RateProduct()
+    //   Object.assign(rateProduct, rateProductReq)
+    //   const rateProductSaved = await rateProduct.save()
+    //   return res.json({ status: 'success', code: 200, data: rateProductSaved, timestamp: new Date().toLocaleString() })
+    // } catch (error) {
+    return res.status(400).json({ status: 'error', code: 400, data: "dang phat trien", timestamp: new Date().toLocaleString() })
+  }
+
+
+
+
+
+
+  handleImage = async (req, res) => {
+    console.log(req.file)
+  }
+
+
 
 }
 

@@ -1,16 +1,27 @@
 const accountRouter = require("./account");
 const productRouter = require("./product");
-const cartRouter = require("./cart");
+const orderRouter = require("./order");
+const authRouter = require("./auth");
+const contactRouter = require("./contact");
 
 function route(app) {
   app.use("/accounts", accountRouter);
 
-  app.use("/cart", cartRouter);
+  app.use("/orders", orderRouter);
 
   app.use("/products", productRouter);
 
+  app.use("/auth", authRouter);
+
+  app.use("/contacts", contactRouter)
+
   app.use("/", (req, res) => {
-    res.send("<h1>Welcome to API COFFEE MONSTER</h1>");
+    res.status(400).json({
+      status: "error",
+      code: 404,
+      msg: "Invalid URL",
+      timestamp: new Date().toLocaleString()
+    });
   });
 }
 

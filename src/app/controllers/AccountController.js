@@ -107,9 +107,21 @@ class AccountController {
   // [PUT] /accounts
   editAccount = async (req, res, next) => {
     const accountReq = req.body;
-    accountReq.updatedAt = new Date()
     const account = await Account.findById(accountReq.user_id)
+    if (accountReq.password && accountReq.newPassword) {
+      if (accountReq.password === account.password) {
+        account.password = accountReq.newPassword;
+      } else {
+        return res.status(400).json({
+          status: 'error',
+          code: 400,
+          msg: "Change password failed",
+          timestamp: new Date().toLocaleString()
+        })
+      }
+    }
     Object.assign(account, accountReq)
+    account.updatedAt = new Date()
     const accountSaved = await account.save()
     return res.json({
       status: 'success', code: 200, msg: "Updated account successfully", account: {
