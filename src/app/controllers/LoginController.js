@@ -84,21 +84,26 @@ class OrderController {
         const verifyCode = generateRandomString(6);
         //handle find password
         const account = await Account.findOne({ email: email });
-        account.verifyCode = verifyCode;
-        account.save();
-        const mainOptions = {
-            from: 'Monster Coffee  <longnv.coffee.monster@gmail.com>',
-            to: email,
-            subject: "Monster Coffee thông báo - Yêu cầu đặt lại mật khẩu",
-            text: `Mã xác nhận của bạn là: ${verifyCode.toUpperCase()}`,
-            html: `<h2>Xác Nhận Khôi Phục Mật Khẩu</h2><p>Cảm ơn bạn đã yêu cầu khôi phục mật khẩu. Dưới đây là mã xác nhận của bạn:</p><p style="font-size: 24px; font-weight: bold;">${verifyCode}</p><p>Vui lòng nhập mã xác nhận này vào trang web để hoàn tất quá trình khôi phục mật khẩu.</p><p>Nếu bạn không yêu cầu khôi phục mật khẩu, hãy bỏ qua email này.</p><p>Trân trọng,<br>Đội ngũ hỗ trợ của chúng tôi</p>`
-        };
-        setTimeout(() => {
-            account.verifyCode = ""
-            account.save()
-        }, (2 * 60 * 1000))
-        sendEmail(mainOptions)
-        return res.status(200).json({ status: 'success', code: 200, msg: "send mail successfully", timestamp: new Date().toLocaleString() })
+        if (account) {
+            account.verifyCode = verifyCode;
+            account.save();
+            const mainOptions = {
+                from: 'Monster Coffee  <longnv.coffee.monster@gmail.com>',
+                to: email,
+                subject: "Monster Coffee thông báo - Yêu cầu đặt lại mật khẩu",
+                text: `Mã xác nhận của bạn là: ${verifyCode.toUpperCase()}`,
+                html: `<h2>Xác Nhận Khôi Phục Mật Khẩu</h2><p>Cảm ơn bạn đã yêu cầu khôi phục mật khẩu. Dưới đây là mã xác nhận của bạn:</p><p style="font-size: 24px; font-weight: bold;">${verifyCode}</p><p>Vui lòng nhập mã xác nhận này vào trang web để hoàn tất quá trình khôi phục mật khẩu.</p><p>Nếu bạn không yêu cầu khôi phục mật khẩu, hãy bỏ qua email này.</p><p>Trân trọng,<br>Đội ngũ hỗ trợ của chúng tôi</p>`
+            };
+            setTimeout(() => {
+                account.verifyCode = ""
+                account.save()
+            }, (2 * 60 * 1000))
+            sendEmail(mainOptions)
+            return res.status(200).json({ status: 'success', code: 200, msg: "send mail successfully", timestamp: new Date().toLocaleString() })
+        } else {
+            return res.status(404).json({ status: 'fail', code: 404, msg: "account not found", timestamp: new Date().toLocaleString() })
+
+        }
     }
     createNewPassword = async (req, res) => {
         const verifyCode = req.body.verifyCode;

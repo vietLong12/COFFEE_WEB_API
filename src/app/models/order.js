@@ -34,9 +34,12 @@ const Order = mongoose.model("Order", new mongoose.Schema({
             productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
             sizeId: { type: mongoose.Schema.Types.ObjectId, required: true },
             quantity: { type: Number, required: true },
-            price: { type: Number, required: true }
+            price: { type: Number, required: true },
+            img: { type: String, required: false }
         }
     ],
+    freightCost: { type: mongoose.Schema.Types.Number, required: true },
+    note: { type: mongoose.Schema.Types.String, required: true, default: "Không có ghi chú" },
     totalAmount: { type: Number, required: true },
     status: { type: String, enum: ['Pending', 'In progress', 'Completed', "Cancel"], default: 'Pending' },
     paymentMethod: { type: String, required: true },

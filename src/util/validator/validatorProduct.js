@@ -57,6 +57,7 @@ const validateCreateRate = [
     body('email').exists().withMessage("Email is required").isEmail().withMessage("Email not valid").trim(),
     body("username").exists().withMessage("Username not valid"),
     body("vote").exists().withMessage("Vote number is rerquired").isNumeric().withMessage("Vote number not valid"),
+    body("productId").exists().withMessage("Product Id is rerquired").isMongoId().withMessage("Product Id not valid"),
 
     (req, res, next) => {
         const errors = validationResult(req);
@@ -67,6 +68,18 @@ const validateCreateRate = [
     }
 ]
 
+const validateGetRate = [
+    param('productId').exists().withMessage("Product id is required").isMongoId().withMessage("Product id not valid").trim(),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ status: "error", code: 400, description: "Invalid input data", errors: errors.array(), createdAt: new Date().toLocaleString(), });
+        }
+        next();
+    },
+
+]
+
 module.exports = {
-    validateCreateProduct, validateUpdateProduct, validateParamDeleteProduct, validateCreateRate
+    validateCreateProduct, validateUpdateProduct, validateParamDeleteProduct, validateCreateRate, validateGetRate
 }

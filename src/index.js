@@ -10,12 +10,15 @@ const cors = require('cors')
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
+    console.log('file: ', file);
     cb(null, path.join(__dirname, "/images"));
   },
   filename: (req, file, cb) => {
     cb(null, new Date().toISOString().replace(/:/g, '-') + '-' + file.originalname);
   }
 });
+
+
 
 const fileFilter = (req, file, cb) => {
   if (
@@ -40,11 +43,9 @@ db.connect();
 
 app.use(express.static(path.join(__dirname, "/public")));
 
-app.use(
-  multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
-);
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: '50mb' }));
 
 app.use(
   "/pathfinder",

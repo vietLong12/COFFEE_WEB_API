@@ -17,26 +17,11 @@ const validateCreateAccount = [
 const validateEditAccount = [
   body("user_id").exists().withMessage("Id is required").isMongoId().withMessage("Id is not valid"),
   body("password").optional().isLength({ min: 6, max: 20 }).withMessage("Password must be at least 6 characters"),
-  body("newPassword").optional().custom((value, { req }) => {
-    if (req.body.password && !value) {
-      throw new Error("If password is provided, newPassword is required");
-    }
-    return true;
-  }),
+
   body("newPassword").optional().isLength({ min: 6, max: 20 }).withMessage("New password must be at least 6 characters"),
   body("phone").optional().isMobilePhone().withMessage("Phone not valid"),
   (req, res, next) => {
     const errors = validationResult(req);
-
-    // Kiểm tra nếu có lỗi về newPassword thì thêm vào mảng errors
-    if (req.body.password && !req.body.newPassword) {
-      errors.errors.push({
-        value: req.body.newPassword,
-        msg: "If password is provided, newPassword is required",
-        param: "newPassword",
-        location: "body",
-      });
-    }
 
     if (!errors.isEmpty()) {
       return res.status(400).json({

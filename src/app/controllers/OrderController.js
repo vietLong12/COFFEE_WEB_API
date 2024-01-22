@@ -54,7 +54,8 @@ class OrderController {
         cart.push({
           productId: product._id,
           sizeId: size[0]._id,
-          quantity: quantityReq
+          quantity: quantityReq,
+          note: reqBody.note || "Không có ghi chú"
         });
       }
 
@@ -65,7 +66,7 @@ class OrderController {
       // Lưu tài khoản với giỏ hàng đã cập nhật
       const accountSaved = await account.save();
 
-      return res.json({
+      return res.status(200).json({
         status: 'success',
         code: 200,
         data: {
@@ -79,7 +80,7 @@ class OrderController {
         timestamp: new Date().toLocaleString()
       });
     } catch (error) {
-      return res.status(error.code).json({
+      return res.status(400).json({
         status: "error",
         code: error.code,
         msg: error.message,
@@ -139,20 +140,23 @@ class OrderController {
   getOrderById = async (req, res, next) => {
     const orderId = req.params.orderId
     const order = await Order.findById(orderId)
-    return res.status(200).json(
-      {
-        status: 'success',
-        code: 200,
-        order: {
-          orderNumber: order.orderNumber,
-          customer: order.customer,
-          items: order.items,
-          totalAmount: order.totalAmount,
-          status: order.status,
-          paymentMethod: order.paymentMethod
-        },
-        timestamp: new Date().toLocaleString()
-      })
+    if (order) {
+      return res.status(200).json(
+        {
+          status: 'success',
+          code: 200,
+          order: order,
+          timestamp: new Date().toLocaleString()
+        })
+    } else {
+      return res.status(404).json(
+        {
+          status: 'not found',
+          code: 404,
+          order: order,
+          timestamp: new Date().toLocaleString()
+        })
+    }
   }
   // [POST] /orders
   createOrder = async (req, res) => {
@@ -181,19 +185,23 @@ class OrderController {
         items: await Promise.all(account.cart.items.map(async (item) => {
           const product = await Product.findById(item.productId);
           const size = product.sizes.find((s) => s._id == item.sizeId);
+          let quantityReturn = item.quantity
           totalAmount += item.quantity * size.price
           // Trả về một đối tượng thể hiện thông tin sản phẩm trong đơn hàng
           return {
             productId: product._id,
             sizeId: size._id,
-            quantity: item.quantity,
-            price: size.price
+            quantity: quantityReturn,
+            price: size.price,
+            img: product.img
           };
         })),
         totalAmount: totalAmount,
-        paymentMethod: req.body.paymentMethod
+        paymentMethod: req.body.paymentMethod,
+        freightCost: req.body.freightCost
       });
       const savedOrder = await order.save();
+      console.log('savedOrder: ', savedOrder);
 
       //setting mail
       const mainOptions = {
@@ -211,7 +219,7 @@ class OrderController {
       return res.status(500).json({
         status: 'error',
         code: 500,
-        msg: 'Internal Server Error',
+        msg: error.message,
         timestamp: new Date().toLocaleString()
       });
     }

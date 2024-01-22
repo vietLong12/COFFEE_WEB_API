@@ -10,8 +10,10 @@ class OrderController {
       accountId,
       productId,
       sizeId,
-      quantity
+      quantity,
+      note
     } = req.body;
+    console.log(note)
     try {
       if (isValidObjectId(accountId) && isValidObjectId(productId) && isValidObjectId(sizeId)) {
         const account = await Account.findById(accountId);
@@ -24,16 +26,17 @@ class OrderController {
               if (item.productId == productId && item.sizeId == sizeId) {
                 isNew = false
                 if (quantity != null) {
-                  item.quantity += quantity
+                  item.quantity += quantity;
+                  item.total = item.quantity * size.price;
                 } else {
                   item.quantity++;
+                  item.total = item.quantity * size.price;
                 }
               }
               return item
             })
             if (isNew) {
-              console.log("is New true")
-              listCartItems.push({ productId: productId, quantity: quantity ? quantity : 1, sizeId: sizeId })
+              listCartItems.push({ productId: productId, quantity: quantity ? quantity : 1, sizeId: sizeId, note })
             }
             account.cart.items = listCartItems
             const accountSaved = await account.save()

@@ -1,8 +1,10 @@
 const Product = require("../models/product");
 const Order = require("../models/order");
+const Account = require("../models/account");
 const CategoryProduct = require("../models/categoryProduct");
 const RateProduct = require("../models/rateProduct");
 const { isValidObjectId } = require("mongoose");
+const cloudinary = require("cloudinary");
 
 class ProductController {
   // [GET] /products
@@ -196,15 +198,57 @@ class ProductController {
   }
 
   commentProduct = async (req, res) => {
-    // const rateProductReq = req.body
-    // try {
-    //   const order = Order.find({ em: })
-    //   const rateProduct = new RateProduct()
-    //   Object.assign(rateProduct, rateProductReq)
-    //   const rateProductSaved = await rateProduct.save()
-    //   return res.json({ status: 'success', code: 200, data: rateProductSaved, timestamp: new Date().toLocaleString() })
-    // } catch (error) {
-    return res.status(400).json({ status: 'error', code: 400, data: "dang phat trien", timestamp: new Date().toLocaleString() })
+    const rateProductReq = req.body
+    try {
+      const product = await Product.findById(rateProductReq.productId)
+      const order = await Order.findOne({ 'customer.email': rateProductReq.email })
+      const rateProduct = new RateProduct()
+      Object.assign(rateProduct, rateProductReq)
+      if (order) {
+        rateProduct.isPurchased = true
+      } else {
+        rateProduct.isPurchased = false
+      }
+      const rateProductSaved = await rateProduct.save()
+      product.comments.push(rateProductSaved._id)
+      product.save()
+      return res.json({ status: 'success', code: 200, data: rateProductSaved, timestamp: new Date().toLocaleString() })
+
+    } catch (error) {
+      return res.status(400).json({ status: 'error', code: 400, msg: error.message, timestamp: new Date().toLocaleString() })
+    }
+  }
+
+  getCommentProduct = async (req, res) => {
+    const productId = req.params.productId
+    const product = await Product.findById(productId)
+    if (product) {
+      let listComment = product.comments
+      if (!listComment) {
+        return res.status(400).json({ status: 'error', code: 400, msg: "not found comment", timestamp: new Date().toLocaleString() })
+      }
+      const listResult = listComment.map(async comment => {
+        const cmtInfor = await RateProduct.findById(comment)
+        return cmtInfor
+      })
+      const comments = await Promise.all(listResult)
+      const totalVotes = comments.reduce((accumulator, currentValue) => accumulator + currentValue.vote, 0);
+      const averageVote = totalVotes / comments.length;
+
+
+      return res.status(200).json({
+        status: 'success',
+        code: 200,
+        data: {
+          listComment: comments,
+          averageVote: averageVote
+        },
+        timestamp: new Date().toLocaleString(),
+      })
+    } else {
+      return res.status(404).json({ status: 'error', code: 404, msg: "product not found", timestamp: new Date().toLocaleString() })
+
+    }
   }
 
 
@@ -212,9 +256,7 @@ class ProductController {
 
 
 
-  handleImage = async (req, res) => {
-    console.log(req.file)
-  }
+
 
 
 

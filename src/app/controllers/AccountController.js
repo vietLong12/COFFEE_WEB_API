@@ -3,7 +3,13 @@ const { generateRandomToken } = require("../../util/util");
 const account = require("../models/account");
 const Account = require("../models/account");
 const { validationResult } = require("express-validator");
+const cloudinary = require("cloudinary")
 
+cloudinary.config({
+  cloud_name: 'dxx3yfsyc',
+  api_key: '425859424738119',
+  api_secret: "FZ8jNTX8hNj9rJbIUAPb6d_H-lY"
+});
 class AccountController {
   // [GET] /accounts
   listAccount = async (req, res, next) => {
@@ -109,8 +115,22 @@ class AccountController {
     const accountReq = req.body;
     const account = await Account.findById(accountReq.user_id)
     if (accountReq.password && accountReq.newPassword) {
+      console.log("doi matt khau")
       if (accountReq.password === account.password) {
+        console.log("mat khau trung khop")
+        Object.assign(account, accountReq)
         account.password = accountReq.newPassword;
+        account.updatedAt = new Date()
+        const accountSaved = await account.save()
+        return res.json({
+          status: 'success', code: 200, msg: "Updated account successfully", account: {
+            username: accountSaved.username,
+            email: accountSaved.email,
+            phone: accountSaved.phone
+          },
+          timeStamp: accountSaved.createdAt.toLocaleString()
+        })
+
       } else {
         return res.status(400).json({
           status: 'error',
@@ -119,20 +139,33 @@ class AccountController {
           timestamp: new Date().toLocaleString()
         })
       }
+    } else {
+      console.log("doi thong tin bt", accountReq.password, account.password)
+      if (account.password == accountReq.password) {
+        Object.assign(account, accountReq)
+        account.updatedAt = new Date()
+        const accountSaved = await account.save()
+        return res.json({
+          status: 'success', code: 200, msg: "Updated account successfully", account: {
+            username: accountSaved.username,
+            email: accountSaved.email,
+            phone: accountSaved.phone
+          },
+          timeStamp: accountSaved.createdAt.toLocaleString()
+        })
+      } else {
+        return res.status(400).json({
+          status: 'error',
+          code: 400,
+          msg: "Password is wrong",
+          timestamp: new Date().toLocaleString()
+        })
+      }
+
+
+
+
     }
-    Object.assign(account, accountReq)
-    account.updatedAt = new Date()
-    const accountSaved = await account.save()
-    return res.json({
-      status: 'success', code: 200, msg: "Updated account successfully", account: {
-        username: accountSaved.username,
-        email: accountSaved.email,
-        phone: accountSaved.phone
-      },
-      timeStamp: accountSaved.createdAt.toLocaleString()
-    })
-
-
   };
 
   //[DELETE] /accounts/:id

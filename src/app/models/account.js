@@ -34,7 +34,8 @@ const account = new Schema(
           productId: { type: "string", ref: "Product", required: true },
           sizeId: { type: "string", ref: "SizeProduct", required: true },
           quantity: { type: Schema.Types.Number, required: true },
-        },
+          note: { type: Schema.Types.String, required: true, default: "Không có ghi chú" },
+        }
       ],
     },
     verifyCode: { type: Schema.Types.String, default: "" },
