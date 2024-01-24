@@ -112,7 +112,8 @@ class OrderController {
       ]
     };
     try {
-      const data = await Order.find(filter).skip(startIndex).limit(limit)
+      const data = await Order.find(filter).skip(startIndex).limit(limit).sort({ createdAt: -1 })
+
       const pageCount = await Order.countDocuments(filter);
       return res.json({
         status: 'success',
