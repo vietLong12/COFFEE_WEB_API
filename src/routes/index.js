@@ -23,14 +23,15 @@ function route(app) {
   app.post("/image", fileUploader.single("file"), handleImage)
 
 
-  app.use("/", (req, res) => {
-    res.status(400).json({
-      status: "error",
-      code: 404,
-      msg: "Invalid URL",
-      timestamp: new Date().toLocaleString()
-    });
-  });
+  app.use("/", (req, res, next) => {
+    //   res.status(400).json({
+    //     status: "error",
+    //     code: 404,
+    //     msg: "Invalid URL",
+    //     timestamp: new Date().toLocaleString()
+    //   });
+    // });
+    next()
+  })
 }
-
 module.exports = route;

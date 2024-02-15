@@ -34,9 +34,19 @@ const fileFilter = (req, file, cb) => {
 
 const app = express();
 const port = 5500;
-
 const route = require("./routes");
 const db = require("./config/db");
+
+
+const server = require('http').createServer(app);
+const io = require('socket.io')(server, {
+  cors: {
+    origin: "*",
+    methods: ['GET', 'POST'],
+  },
+})
+
+
 
 app.use(cors())
 db.connect();
@@ -57,9 +67,24 @@ app.use(
 );
 
 app.use(morgan("short"));
-
 route(app);
 
-app.listen(port, () => {
+let index = 0;
+io.on('connection', (socket) => {
+  index++;
+  console.log(
+    'A new user connected: ' + socket.id + ', total actives: ' + index
+  );
+  socket.on('disconnect', () => {
+    index--;
+    console.log('A user disconnected: ' + socket.id + ', total actives: ' + index);
+  });
+
+  socket.on("joinLive", (data) => {
+    console.log("Co nguoi moi dang nhap")
+    socket.emit("viewCount", index);
+  })
+});
+server.listen(port, () => {
   console.log(`App listening on port http://localhost:${port}`);
 });

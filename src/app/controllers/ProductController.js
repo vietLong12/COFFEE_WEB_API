@@ -220,10 +220,11 @@ class ProductController {
   }
 
   getCommentProduct = async (req, res) => {
+    const vote = req.query.vote || ""
     const productId = req.params.productId
     const product = await Product.findById(productId)
     if (product) {
-      let listComment = product.comments
+      let listComment = product?.comments
       if (!listComment) {
         return res.status(400).json({ status: 'error', code: 400, msg: "not found comment", timestamp: new Date().toLocaleString() })
       }
@@ -231,7 +232,10 @@ class ProductController {
         const cmtInfor = await RateProduct.findById(comment)
         return cmtInfor
       })
-      const comments = await Promise.all(listResult)
+      let comments = await Promise.all(listResult)
+      if (vote != "") {
+        comments = comments.filter(r => r.vote === vote)
+      }
       const totalVotes = comments.reduce((accumulator, currentValue) => accumulator + currentValue.vote, 0);
       const averageVote = totalVotes / comments.length;
 
