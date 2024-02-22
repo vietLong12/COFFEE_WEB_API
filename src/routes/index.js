@@ -4,6 +4,8 @@ const orderRouter = require("./order");
 const authRouter = require("./auth");
 const contactRouter = require("./contact");
 const fileUploader = require("../util/configs");
+const dashboardRouter = require("./dashboard")
+const excelRouter = require("./excel")
 
 const handleImage = async (req, res) => {
   return res.json(req.file)
@@ -20,8 +22,11 @@ function route(app) {
 
   app.use("/contacts", contactRouter)
 
+  app.use("/dashboard", dashboardRouter)
+
   app.post("/image", fileUploader.single("file"), handleImage)
 
+  app.use("/export", excelRouter)
 
   app.use("/", (req, res, next) => {
     //   res.status(400).json({
