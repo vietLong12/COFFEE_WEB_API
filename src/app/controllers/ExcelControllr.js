@@ -184,20 +184,22 @@ class ExcelController {
             for (const order of orders) {
                 const orderData = {
                     orderNumber: order.orderNumber,
-                    username: account.username,
-                    email: account.email,
-                    phone: account.phone,
-                    address: address[0],
-                    createdAt: account.createdAt
+                    customer: `${order.customer.username} - ${order.customer.phone}`,
+                    address: order.customer.address,
+                    totalAmount: order.totalAmount,
+                    quantityProduct: order.items.length,
+                    status: order.status,
+                    paymentMethod: order.paymentMethod,
+                    createdAt: order.createdAt
                 };
-                jsonData.push(accountData)
+                jsonData.push(orderData)
             }
 
             const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Nguoi_dung');
+            const worksheet = workbook.addWorksheet('order');
 
-            worksheet.addRow(["Danh sách người dùng"]);
-            worksheet.mergeCells('A1', 'F1');
+            worksheet.addRow(["Danh sách đơn hàng"]);
+            worksheet.mergeCells('A1', 'H1');
             worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
             worksheet.getCell('A1').font = { bold: true, size: 20 };
 
@@ -205,11 +207,13 @@ class ExcelController {
 
             worksheet.addRow([
                 'ID',
-                'Tên người dùng',
-                'Email',
-                'Số điện thoại',
+                'Thông tin khách hàng',
                 'Địa chỉ',
-                'Ngày tạo tài khoản'
+                'Tổng giá trị đơn hàng',
+                'Số lượng sản phẩm',
+                'Trạng thái đơn hàng',
+                "Phương thức thanh toán",
+                "Ngày tạo đơn"
             ]);
 
 
@@ -220,12 +224,14 @@ class ExcelController {
             worksheet.getCell("D3").font = { bold: true }
             worksheet.getCell("E3").font = { bold: true }
             worksheet.getCell("F3").font = { bold: true }
+            worksheet.getCell("G3").font = { bold: true }
+            worksheet.getCell("H3").font = { bold: true }
 
-            worksheet.getColumn('A').width = 35;
+            worksheet.getColumn('A').width = 25;
             worksheet.getColumn('B').width = 30;
-            worksheet.getColumn('C').width = 25;
+            worksheet.getColumn('C').width = 40;
             worksheet.getColumn('D').width = 15;
-            worksheet.getColumn('E').width = 50;
+            worksheet.getColumn('E').width = 10;
             worksheet.getColumn('F').width = 20;
             worksheet.getColumn('G').width = 20;
             worksheet.getColumn('H').width = 20;
@@ -234,11 +240,13 @@ class ExcelController {
 
             jsonData.forEach(data => {
                 worksheet.addRow([
-                    data._id,
-                    data.username,
-                    data.email,
-                    data.phone,
+                    data.orderNumber,
+                    data.customer,
                     data.address,
+                    data.totalAmount,
+                    data.quantityProduct,
+                    data.status,
+                    data.paymentMethod,
                     data.createdAt
                 ]);
             });
@@ -246,7 +254,7 @@ class ExcelController {
             const filePath = 'data.xlsx';
             await workbook.xlsx.writeFile(filePath);
 
-            return res.download(filePath, 'Danh_sach_nguoi_dung_' + moment().format('DDMMYYYY') + '.xlsx');
+            return res.download(filePath, 'Danh_sach_don_hang_' + moment().format('DDMMYYYY') + '.xlsx');
         } catch (error) {
             console.log('error: ', error);
             return res.status(500).json({ error: 'Đã có lỗi xảy ra khi xuất dữ liệu ra file Excel' });
