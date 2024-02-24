@@ -1,6 +1,8 @@
 const { isValidObjectId } = require("mongoose");
 const { generateRandomToken } = require("../../util/util");
 const Account = require("../models/account");
+const Category = require("../models/categoryProduct");
+const Product = require("../models/product");
 const Contact = require("../models/contact");
 const Comment = require("../models/rateProduct");
 const { validationResult } = require("express-validator");
@@ -119,14 +121,80 @@ class DashboardController {
         }
     }
     getChart = async (req, res) => {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
         const filter = {
-            $or: [
-                { createdAt: { $gte: prior1MonthDate, $lt: new Date() } }
-                ,
-            ],
+            createdAt: { $gte: startOfToday, $lt: endOfToday }
         };
-        const order = await Order.find({ createdAt: new Date() })
-        console.log('order: ', order);
+        const order = await Order.find()
+        const r = []
+        for (const o of order) {
+            r.push(...o.items)
+        }
+
+        const productQuantities = r.reduce((accumulator, currentValue) => {
+            const { productId, quantity } = currentValue;
+            accumulator[productId] = (accumulator[productId] || 0) + quantity;
+            return accumulator;
+        }, {});
+
+        const orderArray = Object.entries(productQuantities);
+        const top5 = orderArray.sort((a, b) => b[1] - a[1]);
+        const result = top5.map(async (i) => {
+            const data = await Product.findById(i[0])
+            if (data) {
+                const category = await Category.findById(data.categoryId)
+                return {
+                    ...i, productName: data.productName, category: category.category
+                }
+            } else {
+                return {
+                    ...i, productName: "Chưa rõ sản phẩm", category: "Không rõ"
+                }
+            }
+        })
+        const a = await Promise.all(result)
+
+        const categoryQuantities = a.reduce((accumulator, currentValue) => {
+            const { category, quantity } = currentValue;
+            accumulator[category] = (accumulator[category] || 0) + currentValue[1];
+            return accumulator;
+        }, {});
+        // const orderToday = await Order.find(filter)
+        const dataOldMonth = [];
+        const dataPresent = [];
+        const day = new Date().getDate() + 1
+        const dayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        for (let i = 1; i <= dayOfMonth; i++) {
+            if (i < day) {
+                dataPresent.push(Math.floor(Math.random() * 100));
+            }
+            dataOldMonth.push(Math.floor(Math.random() * 100));
+        }
+
+
+        const orderNew = await Order.find().sort({ createdAt: -1 }).limit(5);
+        const o = orderNew.map(o => {
+            return {
+                username: o.customer.username,
+                totalBill: o.totalAmount
+            }
+        })
+        const result2 = await Promise.all(o)
+        res.json({
+            status: "success",
+            code: 200,
+            data: {
+                bestSeller: a.slice(0, 5), productToday: categoryQuantities, chart: {
+                    dataOldMonth, dataPresent
+                }, notification: result2
+            },
+            timestamp: new Date().toLocaleString()
+        })
     }
 
 }
