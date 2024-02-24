@@ -71,6 +71,7 @@ route(app);
 
 let index = 0;
 let listComment = []
+let dataStream = null
 io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
@@ -93,6 +94,7 @@ io.on('connection', (socket) => {
 
   socket.on("stream", (data) => {
     console.log('data: ', data);
+    dataStream = data
     io.emit("live", data)
   })
 
@@ -104,6 +106,8 @@ io.on('connection', (socket) => {
     console.log(`Hiện có ${index} viewer`)
     io.emit("viewCount", index);
     io.emit("listComment", listComment);
+    console.log(dataStream)
+    socket.emit("live", dataStream)
   })
   socket.on("viewerOutLive", () => {
     index--;
