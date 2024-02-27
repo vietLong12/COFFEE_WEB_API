@@ -5,7 +5,9 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const pathfinderUI = require("pathfinder-ui");
 const multer = require('multer');
+const dotenv = require('dotenv');
 
+dotenv.config()
 const cors = require('cors')
 
 const fileStorage = multer.diskStorage({
