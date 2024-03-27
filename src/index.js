@@ -12,7 +12,6 @@ const cors = require('cors')
 
 const fileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    console.log('file: ', file);
     cb(null, path.join(__dirname, "/images"));
   },
   filename: (req, file, cb) => {
@@ -75,15 +74,16 @@ let index = 0;
 let listComment = []
 let dataStream = null
 io.on('connection', (socket) => {
-
+  index++
   socket.on('disconnect', () => {
-    index--;
+    index--
     console.log('A user disconnected: ' + socket.id + ', total actives: ' + index);
   });
   socket.on("adminLive", () => {
     const temp = [...listComment]
     const slicedCommentList = temp.slice(Math.max(listComment.length - 100, 0));
-    socket.emit("adminComment", slicedCommentList);
+    listComment = []
+    socket.emit("adminComment", listComment);
   })
 
   socket.on("sendComment", (data) => {
@@ -94,26 +94,33 @@ io.on('connection', (socket) => {
     io.emit("adminComment", slicedCommentList);
   })
 
+
+  socket.on("user-id", userId => {
+    io.emit("user-admin-id", userId);
+    io.to(dataStream).emit("user-admin-id", userId)
+  })
+
   socket.on("stream", (data) => {
-    console.log('data: ', data);
+    console.log('id: ', data);
     dataStream = data
     io.emit("live", data)
   })
 
   socket.on("joinLive", (data) => {
-    index++;
     console.log(
       'Có người mới tham gia live: ' + socket.id + ', Tên người tham gia: ' + data
     );
     console.log(`Hiện có ${index} viewer`)
     io.emit("viewCount", index);
     io.emit("listComment", listComment);
-    console.log(dataStream)
     socket.emit("live", dataStream)
   })
+
+
+
   socket.on("viewerOutLive", () => {
     index--;
-    io.emit("viewCount", index - 1);
+    io.emit("viewCount", index);
   })
 });
 

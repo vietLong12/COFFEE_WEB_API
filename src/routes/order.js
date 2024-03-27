@@ -10,7 +10,7 @@ router.post("/cart", validateAddToCart, OrderController.addToCart);
 
 
 //handle order
-router.get("/", verifyToken, OrderController.getListOrder)
+router.get("/", OrderController.getListOrder)
 router.post("/", validateOrder, OrderController.createOrder)
 router.put("/", validateUpdateOrder, OrderController.updateOrder)
 router.get("/:orderId", validateGetOrderById, OrderController.getOrderById)

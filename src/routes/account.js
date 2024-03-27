@@ -6,11 +6,12 @@ const { validateCreateAccount, validateEditAccount, validateDeleteAccount } = re
 const verifyToken = require("../middleware/auth");
 
 
+router.get("/:id", accountController.getAccount);
+
 router.get("/", verifyToken, accountController.listAccount);
 
 router.post("/", validateCreateAccount, accountController.createAccount);
 
-router.get("/:id", accountController.getAccount);
 
 router.put("/", validateEditAccount, accountController.editAccount);
 

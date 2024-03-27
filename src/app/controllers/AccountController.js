@@ -115,9 +115,7 @@ class AccountController {
     const accountReq = req.body;
     const account = await Account.findById(accountReq.user_id)
     if (accountReq.password && accountReq.newPassword) {
-      console.log("doi matt khau")
       if (accountReq.password === account.password) {
-        console.log("mat khau trung khop")
         Object.assign(account, accountReq)
         account.password = accountReq.newPassword;
         account.updatedAt = new Date()
@@ -140,7 +138,6 @@ class AccountController {
         })
       }
     } else {
-      console.log("doi thong tin bt", accountReq.password, account.password)
       if (account.password == accountReq.password) {
         Object.assign(account, accountReq)
         account.updatedAt = new Date()
@@ -154,19 +151,33 @@ class AccountController {
           timeStamp: accountSaved.createdAt.toLocaleString()
         })
       } else {
-        return res.status(400).json({
-          status: 'error',
-          code: 400,
-          msg: "Password is wrong",
-          timestamp: new Date().toLocaleString()
-        })
+        if (!accountReq.password && accountReq.address) {
+          account.address = accountReq.address
+          account.updatedAt = new Date()
+          const accountSaved = await account.save()
+          return res.json({
+            status: 'success', code: 200, msg: "Updated account successfully", account: {
+              username: accountSaved.username,
+              email: accountSaved.email,
+              phone: accountSaved.phone
+            },
+            timeStamp: accountSaved.createdAt.toLocaleString()
+          })
+        } else {
+          return res.status(400).json({
+            status: 'error',
+            code: 400,
+            msg: "Password is wrong",
+            timestamp: new Date().toLocaleString()
+          })
+        }
+
+
+
       }
-
-
-
-
     }
-  };
+  }
+
 
   //[DELETE] /accounts/:id
   deleteAccount = async (req, res) => {

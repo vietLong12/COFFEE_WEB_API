@@ -178,9 +178,18 @@ class ProductController {
   };
 
   getCategoryList = (req, res) => {
-    CategoryProduct.find().then((data) => {
-      if (data) return res.status(200).json({ data: data, record_size: data.length })
-    })
+    try {
+      CategoryProduct.find().then((data) => {
+        if (data) return res.status(200).json({ data: data, record_size: data.length });
+      }).catch((err) => {
+        throw { 
+          code: 500,
+          message: err.message
+        };
+      });
+    } catch (error) {
+      return res.status(error.code || 500).json({ message: error.message || "Internal Server Error", createdAt: new Date() });
+    }
   }
 
 

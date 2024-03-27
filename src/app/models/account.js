@@ -13,15 +13,15 @@ const account = new Schema(
       {
         homeAddress: { type: "string", default: "" },
         city: {
-          code: { type: "number", default: 0 },
+          code: { type: "string", default: "" },
           name: { type: "string", default: "" }
         },
         district: {
-          code: { type: "number", default: 0 },
+          code: { type: "string", default: "" },
           name: { type: "string", default: "" }
         },
         ward: {
-          code: { type: Schema.Types.Number, default: 0 },
+          code: { type: "string", default: "" },
           name: { type: "string", default: "" }
         },
         defaultAddress: { type: Schema.Types.Boolean, default: false }
